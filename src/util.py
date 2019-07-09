@@ -32,13 +32,6 @@ def draw_wrapped_line(screen, color, p1, p2, width=1):
 		if p1_y < 0 or p1_y > rect.height or p2_y < 0 or p2_y > rect.height:
 			pygame.draw.line(screen, color, (p1_x, p1_y+rect.height), (p2_x, p2_y+rect.height), width)
 			pygame.draw.line(screen, color, (p1_x, p1_y-rect.height), (p2_x, p2_y-rect.height), width)
-
-def wrap(i, limit):
-	# modulus dealing with negatives correctly
-	if (i >= 0):
-		return i % limit
-	else:
-		return (limit + i) % limit
 	
 def is_point_inside_circle(px, py, cx, cy, cRadius):
 	return distance(px, py, cx, cy) < cRadius

@@ -2,7 +2,7 @@
 import math
 import random
 
-import pygame
+import pygame as pg
 
 from .. import constants as c
 from .. import setup
@@ -17,63 +17,84 @@ class Game(_State):
 		_State.__init__(self)
 
 	def startup(self, current_time, persist):
-		self.random = random.Random(2020)
+		self.rng = random.Random(2020)
+		# middle of screen by using splat and generator expression
 		self.player_ship = Ship(*(x//2 for x in setup.SCREEN_RECT.size))
 		self.asteroids = []
 		self.bullets = []
 		self.last_fire_time = 0
-		self.fire_cooldown = 210
+		self.fire_cooldown = 420
 		self.player_dead = False
 
-		# add some asteroids
-		n = self.random.randint(10, 16)
-		for i in range(n):
-			x = random.randint(0, setup.SCREEN_RECT.width)
-			y = random.randint(0, setup.SCREEN_RECT.height)
-			r = random.randint(15, 35)
-			vx = random.gauss(0, 10)
-			vy = random.gauss(0, 10)
-			va = random.gauss(0, 1)
-			num_vertices = 12
-			radius_variance = 0.2 * r
-			# TODO: add the new asteroid
-			a = Asteroid(x, y, r, self.random, num_vertices, radius_variance)
-			a.vel_x = vx
-			a.vel_y = vy
-			a.vel_a = va
-			self.asteroids.append(a)
+		self.generate_asteroid_field()
 
 	def update(self, screen, keys, current_time):
 		# update time
 		self.current_time = current_time
-		# update bullets
-		for b in self.bullets:
-			if b.alive:
-				b.update_pos()
-				b.draw(screen)
-		
-		# update and show asteroids
-		for a in self.asteroids:
-			# check bullet collisions
-			for b in self.bullets:
-				if util.is_point_inside_circle(b.x, b.y, a.x, a.y, a.bounding_radius):
-					b.alive = False
-					a.alive = False
-			# check player collisions
-			for p in self.player_ship.vertices:
-				if util.is_point_inside_circle(p[0], p[1], a.pos_x, a.pos_y, a.death_radius):
-					self.done = True
-			a.update()
-			a.draw(screen)
-			# wrap around screen
-			a.pos_x = util.wrap(a.pos_x, setup.SCREEN_RECT.width)
-			a.pos_y = util.wrap(a.pos_y, setup.SCREEN_RECT.height)
+		# clear whole screen
+		screen.fill((0,0,0))
 
+		self.update_asteroids(screen)
+		self.update_player(screen, keys)
+		self.update_bullets(screen)
+		self.asteroid_physics()
+
+		# shoot bullets
+		if keys[pg.K_SPACE]:
+			self.ship_shoot_bullet()	
+
+	def player_overlaps_asteroid(self, asteroid):
+		for px, py in self.player_ship.vertices:
+			if util.is_point_inside_circle(px, py, asteroid.pos_x, 
+			 		asteroid.pos_y, asteroid.death_radius):
+				return True
+		return False
+
+	def generate_asteroid_field(self):
+		# add some asteroids
+		for i in range(self.rng.randint(10, 16)):
+			x = self.rng.randint(0, setup.SCREEN_RECT.width)
+			y = self.rng.randint(0, setup.SCREEN_RECT.height)
+			r = self.rng.randint(15, 35)
+			vx = self.rng.gauss(0, 10)
+			vy = self.rng.gauss(0, 10)
+			va = self.rng.gauss(0, 1)
+			num_vertices = 12
+			radius_variance = 0.2 * r
+			# create asteroid, and add it if doesn't touch player
+			a = Asteroid(x, y, r, self.rng, num_vertices, radius_variance)
+			if not self.player_overlaps_asteroid(a):
+				a.vel_x = vx
+				a.vel_y = vy
+				a.vel_a = va
+				self.asteroids.append(a)
+
+	def update_player(self, screen, keys):
 		# update player
 		self.player_ship.update(keys)
-		self.player_ship.pos_x = util.wrap(self.player_ship.pos_x, setup.SCREEN_RECT.width)
-		self.player_ship.pos_y = util.wrap(self.player_ship.pos_y, setup.SCREEN_RECT.height)
+		self.player_ship.draw(screen)
+		self.player_ship.pos_x = self.player_ship.pos_x % setup.SCREEN_RECT.width
+		self.player_ship.pos_y = self.player_ship.pos_y % setup.SCREEN_RECT.height
 
+	def ship_shoot_bullet(self):
+		if self.current_time - self.last_fire_time >= self.fire_cooldown:
+			self.last_fire_time = self.current_time
+			player_speed = util.distance(self.player_ship.vel_x, self.player_ship.vel_y, 0, 0) # get magnitude
+			player_nose_x = self.player_ship.vertices[0][0]
+			player_nose_y = self.player_ship.vertices[0][1]
+			b = Bullet(player_nose_x, player_nose_y, 
+				self.player_ship.angle, player_speed + 150, self.current_time)
+			self.bullets.append(b)
+
+	# update bullets
+	def update_bullets(self, screen):
+		self.bullets = [b for b in self.bullets if b.alive]
+		for b in self.bullets:
+			b.update(screen, self.current_time)
+			b.pos_x = b.pos_x % setup.SCREEN_RECT.width
+			b.pos_y = b.pos_y % setup.SCREEN_RECT.height
+
+	def asteroid_physics(self):
 		# asteroid collisions
 		colliding_asteroid_pairs = []
 		for asteroid in self.asteroids:
@@ -129,31 +150,26 @@ class Game(_State):
 			a2.x_vel = tx * dp_tan2 + nx * m2
 			a2.y_vel = ty * dp_tan2 + ny * m2
 
-		# split dead asteroids
+	def update_asteroids(self, screen):
+		# update and show asteroids
+		hit_player = False
+		# remove dead asteroids
+		self.asteroids = [a for a in self.asteroids if a.alive]
 		for a in self.asteroids:
-			if not a.alive:
-				# choose how much to split
-				num_split = 2 + random.next_int(2) # between 2-4
-				for i in range(num_split):
-					x = a.x + self.random.randint(5, 15)
-					y = a.y + self.random.randint(5, 15)
-					# TODO add_asteroid(to_add, x, y, a.base_radius/2.0f, (int)(a.num_vertices*.75f), a.radius_variance/2.0f)
-
-		# kill all things that need die
-		for i, b in enumerate(self.bullets):
-			if not b.alive:
-				self.bullets.pop(b)
-		
-		# remove dead asteroids and split them up
-		for a in self.asteroids:
-			if not a.alive:
-				self.asteroids.pop(a)
-
-	def ship_shoot_bullet(self):
-		if (self.current_time - self.last_fire_time >= self.fire_cooldown):
-			self.last_fire_time = self.current_time
-			player_speed = util.distance(player_ship.x_vel, player_ship.y_vel, 0, 0) # get magnitude
-			player_nose_x = player_ship.get_current_model_ints()[0][0]
-			player_nose_y = player_ship.get_current_model_ints()[0][1]
-			b = Bullet(player_nose_x, player_nose_y, player_ship.angle, player_speed + 150)
-			self.bullets.append(b)
+			# check bullet collisions
+			for b in self.bullets:
+				if util.is_point_inside_circle(b.pos_x, b.pos_y, a.pos_x, a.pos_y, a.bounding_radius):
+					b.alive = False
+					a.alive = False
+			# check player collisions -> game over
+			if self.player_overlaps_asteroid(a):
+				hit_player = True
+			a.update()
+			a.draw(screen)
+			# wrap positions around screen
+			a.pos_x = a.pos_x % setup.SCREEN_RECT.width
+			a.pos_y = a.pos_y % setup.SCREEN_RECT.height
+		# game over if hit player
+		if hit_player:
+			self.next = c.GAME_OVER
+			self.done = True
