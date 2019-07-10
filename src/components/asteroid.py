@@ -1,5 +1,4 @@
 
-import random
 import math
 
 import pygame as pg
@@ -7,6 +6,10 @@ from pygame import Vector2
 
 from .. import util
 from .space_object import SpaceObject
+
+BIG = 32
+MEDIUM = 16
+SMALL = 8
 
 YELLOW = (255, 255, 0)
 
@@ -16,25 +19,30 @@ class Asteroid(SpaceObject):
 	
 	@classmethod
 	def get_next_asteroid_id(cls):
+		result = cls.last_asteroid_id
 		cls.last_asteroid_id += 1
-		return cls.last_asteroid_id - 1
+		return result
 
-	def __init__(self, x, y, radius, random, num_vertices, radius_variance):
-		SpaceObject.__init__(self, x, y, random.random() * 2 * math.pi)
+	def __init__(self, x, y, size, rng):
+		SpaceObject.__init__(self, x, y, rng.random() * 2 * math.pi)
 
-		self.base_radius = radius
-		self.num_vertices = num_vertices
-		self.radius_variance = radius_variance
+		self.size = size
+		self.base_radius = 1
+		self.num_vertices = 10 if self. size > SMALL else 8
+		self.radius_variance = 0.2 * self.base_radius
+		self.vel_x = rng.gauss(0, 3 * size / SMALL)
+		self.vel_y = rng.gauss(0, 3 * size / SMALL)
+		self.vel_angle = rng.gauss(0, .5)
 		
 		# Create model points/vertices
 		self.radii = [
-			round(self.base_radius + random.gauss(0, 1) * radius_variance)
+			round((self.base_radius + rng.gauss(0, 1) * self.radius_variance) * self.size)
 			 for i in range(self.num_vertices)]
 		self.model = []
 		self.vertices = []
 		for i, r in enumerate(self.radii):
 			# create vertices from trig around a circle
-			angle = 2 * math.pi * (i / num_vertices)
+			angle = 2 * math.pi * (i / self.num_vertices)
 			px = math.cos(angle) * r
 			py = math.sin(angle) * r
 			self.model.append( (px, py) )
@@ -67,5 +75,7 @@ class Asteroid(SpaceObject):
 	
 	def draw(self, screen):
 		util.draw_wrapped_lines(screen, YELLOW, True, self.vertices)
+		# for r in [self.max_radius, self.death_radius, self.min_radius, self.average_radius]:
+		# 	pg.draw.circle(screen, (0, 255, 0), (int(self.pos_x), int(self.pos_y)), int(r), 1)
 	
 

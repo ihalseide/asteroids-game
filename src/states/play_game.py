@@ -8,6 +8,8 @@ from .. import constants as c
 from .. import setup
 from .. import util
 from ..tools import _State
+from ..components import asteroid
+from ..components import particles
 from ..components.bullet import Bullet
 from ..components.ship import Ship
 from ..components.asteroid import Asteroid
@@ -17,11 +19,12 @@ class Game(_State):
 		_State.__init__(self)
 
 	def startup(self, current_time, persist):
-		self.rng = random.Random(2020)
+		self.rng = random.Random(2019)
 		# middle of screen by using splat and generator expression
 		self.player_ship = Ship(*(x//2 for x in setup.SCREEN_RECT.size))
 		self.asteroids = []
 		self.bullets = []
+		self.explosions = []
 		self.last_fire_time = 0
 		self.fire_cooldown = 420
 		self.player_dead = False
@@ -34,6 +37,7 @@ class Game(_State):
 		# clear whole screen
 		screen.fill((0,0,0))
 
+		self.update_explosions(screen)
 		self.update_asteroids(screen)
 		self.update_player(screen, keys)
 		self.update_bullets(screen)
@@ -43,30 +47,21 @@ class Game(_State):
 		if keys[pg.K_SPACE]:
 			self.ship_shoot_bullet()	
 
-	def player_overlaps_asteroid(self, asteroid):
+	def player_overlaps_asteroid(self, an_asteroid):
 		for px, py in self.player_ship.vertices:
-			if util.is_point_inside_circle(px, py, asteroid.pos_x, 
-			 		asteroid.pos_y, asteroid.death_radius):
+			if util.is_point_inside_circle(px, py, an_asteroid.pos_x, 
+			 		an_asteroid.pos_y, an_asteroid.death_radius):
 				return True
 		return False
 
 	def generate_asteroid_field(self):
 		# add some asteroids
-		for i in range(self.rng.randint(10, 16)):
+		for i in range(self.rng.randint(5, 6)):
+			# create asteroid, and add it if doesn't touch player
 			x = self.rng.randint(0, setup.SCREEN_RECT.width)
 			y = self.rng.randint(0, setup.SCREEN_RECT.height)
-			r = self.rng.randint(15, 35)
-			vx = self.rng.gauss(0, 10)
-			vy = self.rng.gauss(0, 10)
-			va = self.rng.gauss(0, 1)
-			num_vertices = 12
-			radius_variance = 0.2 * r
-			# create asteroid, and add it if doesn't touch player
-			a = Asteroid(x, y, r, self.rng, num_vertices, radius_variance)
+			a = Asteroid(x, y, asteroid.BIG, self.rng)
 			if not self.player_overlaps_asteroid(a):
-				a.vel_x = vx
-				a.vel_y = vy
-				a.vel_a = va
 				self.asteroids.append(a)
 
 	def update_player(self, screen, keys):
@@ -83,7 +78,7 @@ class Game(_State):
 			player_nose_x = self.player_ship.vertices[0][0]
 			player_nose_y = self.player_ship.vertices[0][1]
 			b = Bullet(player_nose_x, player_nose_y, 
-				self.player_ship.angle, player_speed + 150, self.current_time)
+				self.player_ship.angle, player_speed + c.BULLET_SPEED, self.current_time)
 			self.bullets.append(b)
 
 	# update bullets
@@ -97,39 +92,43 @@ class Game(_State):
 	def asteroid_physics(self):
 		# asteroid collisions
 		colliding_asteroid_pairs = []
-		for asteroid in self.asteroids:
+		for a in self.asteroids:
 			for target in self.asteroids:
 				# don't test against itself
-				if (asteroid.asteroid_id == target.asteroid_id):
+				if a.asteroid_id == target.asteroid_id:
 					continue
 				# check collision
-				if (util.do_circles_overlap(asteroid.pos_x, asteroid.pos_y, asteroid.bounding_radius,
+				if (util.do_circles_overlap(a.pos_x, a.pos_y, a.bounding_radius,
 					 target.pos_x, target.pos_y, target.bounding_radius)):
 					# collision has occurred
-					colliding_asteroid_pairs.append((asteroid, target))
+					colliding_asteroid_pairs.append((a, target))
 			
 					# distance between centers
-					dist = util.distance(asteroid.pos_x, asteroid.pos_y, target.pos_x, target.pos_y)
-					half_overlap = 0.5 * (dist - asteroid.bounding_radius - target.bounding_radius)
+					dist = util.distance(a.pos_x, a.pos_y, target.pos_x, target.pos_y)
+					# if there is no space between them, skip them to avoid div0 error
+					if dist == 0:
+						continue
+					half_overlap = 0.5 * (dist - a.bounding_radius - target.bounding_radius)
 			
 					# normalized vector between centers
-					normalized_dx = (asteroid.pos_x - target.pos_x) / dist
-					normalized_dy = (asteroid.pos_y - target.pos_y) / dist
+					normalized_dx = (a.pos_x - target.pos_x) / dist
+					normalized_dy = (a.pos_y - target.pos_y) / dist
 			
 					# displace current asteroid
-					asteroid.pos_x -= half_overlap * normalized_dx
-					asteroid.pos_y -= half_overlap * normalized_dy
+					a.pos_x -= half_overlap * normalized_dx
+					a.pos_y -= half_overlap * normalized_dy
 			
 					# displace target asteroid
 					target.pos_x += half_overlap * normalized_dx
 					target.pos_y += half_overlap * normalized_dy
 		
-		# now for dynamic asteroids
-		for p in colliding_asteroid_pairs:
-			a1 = p[0]
-			a2 = p[1]
+		# now for dynamic asteroids, only on asteroids that have collided
+		for a1, a2 in colliding_asteroid_pairs:
 			# distance between asteroids
 			dist = util.distance(a1.pos_x, a1.pos_y, a2.pos_x, a2.pos_y)
+			# if there is no space between them, skip them to avoid div0 error
+			if dist == 0:
+				continue
 			# normal vector
 			nx = (a1.pos_x - a2.pos_x) / dist
 			ny = (a1.pos_y - a2.pos_y) / dist
@@ -145,14 +144,16 @@ class Game(_State):
 			# conversion of momentum in 1_d
 			m1 = (dp_norm1 * (a1.mass - a2.mass) + 2.0 * a2.mass * dp_norm2) / (a1.mass + a2.mass)
 			m2 = (dp_norm2 * (a2.mass - a1.mass) + 2.0 * a1.mass * dp_norm1) / (a1.mass + a2.mass)
-			a1.x_vel = tx * dp_tan1 + nx * m1
-			a1.y_vel = ty * dp_tan1 + ny * m1
-			a2.x_vel = tx * dp_tan2 + nx * m2
-			a2.y_vel = ty * dp_tan2 + ny * m2
+			a1.vel_x = tx * dp_tan1 + nx * m1
+			a1.vel_y = ty * dp_tan1 + ny * m1
+			a2.vel_x = tx * dp_tan2 + nx * m2
+			a2.vel_y = ty * dp_tan2 + ny * m2
 
 	def update_asteroids(self, screen):
 		# update and show asteroids
 		hit_player = False
+		# add these after
+		new_asteroids = []
 		# remove dead asteroids
 		self.asteroids = [a for a in self.asteroids if a.alive]
 		for a in self.asteroids:
@@ -161,6 +162,8 @@ class Game(_State):
 				if util.is_point_inside_circle(b.pos_x, b.pos_y, a.pos_x, a.pos_y, a.bounding_radius):
 					b.alive = False
 					a.alive = False
+					# split the asteroids
+					new_asteroids += self.split_asteroid(a)
 			# check player collisions -> game over
 			if self.player_overlaps_asteroid(a):
 				hit_player = True
@@ -171,5 +174,35 @@ class Game(_State):
 			a.pos_y = a.pos_y % setup.SCREEN_RECT.height
 		# game over if hit player
 		if hit_player:
-			self.next = c.GAME_OVER
+			self.next = c.PLAY_GAME
 			self.done = True
+		# finally add the new ones (if any)
+		self.asteroids += new_asteroids
+
+	def split_asteroid(self, an_asteroid):
+		# create new asteroids from bigger ones only
+		created = []
+		if an_asteroid.size > asteroid.SMALL:
+			num_splits = 2
+			split_size = an_asteroid.size / num_splits
+			# distance to 0 can get the magnitude
+			speed = util.distance(0, 0, an_asteroid.vel_x, an_asteroid.vel_y)
+			s = speed * num_splits
+			for i in range(num_splits):
+				a = Asteroid(an_asteroid.pos_x, an_asteroid.pos_y, split_size, self.rng)
+				angle = self.rng.random() * 2 * math.pi
+				a.vel_x = math.cos(angle) * s
+				a.vel_y = math.sin(angle) * s
+				created.append(a)
+		else:
+			# explode if small
+			self.add_explosion(an_asteroid.pos_x, an_asteroid.pos_y, 10)
+		return created
+
+	def add_explosion(self, x, y, size):
+		exp = particles.Explosion(x, y, size, self.current_time, self.rng)
+		self.explosions.append(exp)
+
+	def update_explosions(self, screen):
+		for x in self.explosions:
+			x.update(screen, self.current_time)

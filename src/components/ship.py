@@ -51,9 +51,6 @@ class Ship(SpaceObject):
 		self.update_pos()
 		self.update_model()
 	
-	def get_current_model(self):
-		return self.vertices
-	
 	def draw(self, screen):		
 		blue = (0, 0, 255)
 		util.draw_wrapped_lines(screen, blue, True, self.vertices)

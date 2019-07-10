@@ -11,3 +11,7 @@ MAX_TICKS_PER_FRAME = 10
 MAIN_MENU = 'main menu'
 GAME_OVER = 'game over'
 PLAY_GAME = 'play game'
+
+# Gameplay
+BULLET_SPEED = 300
+BULLET_LIFETIME = 1500

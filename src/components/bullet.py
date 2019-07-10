@@ -8,12 +8,13 @@ from .space_object import SpaceObject
 RED = (255, 0, 0)
 
 class Bullet(SpaceObject):
-	lifetime = 2000
+
 	def __init__(self, x, y, angle, speed, current_time):
 		SpaceObject.__init__(self, x, y, angle)
 		self.vel_x = math.cos(angle) * speed
 		self.vel_y = math.sin(angle) * speed
 		self.creation_time = current_time
+		self.lifetime = c.BULLET_LIFETIME
 	
 	def update(self, screen, current_time):
 		# move
