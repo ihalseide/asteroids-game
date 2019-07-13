@@ -4,6 +4,9 @@ import math
 import pygame
 from pygame.math import Vector2
 
+def avg_point(x1, y1, x2, y2):
+	return (avg(x1, x2), avg(y1, y2))
+
 def draw_wrapped_lines(screen, color, closed, points, width=1):
 	prev_point = points[0]
 	# draw between all points in "plan"
@@ -71,7 +74,7 @@ def transform_point(x, y, dx, dy, angle, x_scale, y_scale):
 	new_point = translate_point(new_point.x, new_point.y, dx, dy)
 	return new_point
 
-def avg(arr):
-	return sum(arr) / len(arr)
+def avg(*args):
+	return sum(args) / len(args)
 	
 

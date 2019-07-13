@@ -6,6 +6,7 @@ from .. import constants as c
 from .space_object import SpaceObject
 
 RED = (255, 0, 0)
+BLACK = (0, 0, 0)
 
 class Bullet(SpaceObject):
 
@@ -17,12 +18,14 @@ class Bullet(SpaceObject):
 		self.lifetime = c.BULLET_LIFETIME
 	
 	def update(self, screen, current_time):
-		# move
-		self.update_pos()
 		# check age
 		self.alive = current_time - self.creation_time < self.lifetime
-		# draw a red line
-		pos = int(self.pos_x), int(self.pos_y)
-		trail = (int(self.pos_x + self.vel_x/c.TICKS_PER_SECOND),
-		 int(self.pos_y + self.vel_y/c.TICKS_PER_SECOND))
-		util.draw_wrapped_line(screen, RED, pos, trail)
+		# do living stuff
+		if self.alive:
+			# move
+			self.update_pos()	
+			# draw a red line
+			pos = int(self.pos_x), int(self.pos_y)
+			trail = (int(self.pos_x + self.vel_x/c.TICKS_PER_SECOND),
+			 int(self.pos_y + self.vel_y/c.TICKS_PER_SECOND))
+			util.draw_wrapped_line(screen, RED, pos, trail, 2)

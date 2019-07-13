@@ -9,96 +9,36 @@ from .. import setup
 from .. import util
 from ..tools import _State
 from ..components import asteroid
-from ..components import particles
-from ..components.bullet import Bullet
-from ..components.ship import Ship
 from ..components.asteroid import Asteroid
-
-BLACK = (0, 0, 0)
 
 class Game(_State):
 	def __init__(self):
 		_State.__init__(self)
 
 	def startup(self, current_time, persist):
-		self.extra_lives = 3
-
 		self.rng = random.Random(2019)
 		# middle of screen by using splat and generator expression
-		self.player_ship = Ship(*(x//2 for x in setup.SCREEN_RECT.size), self.rng)
 		self.asteroids = []
-		self.bullets = []
-		self.explosions = []
 
 		self.generate_asteroid_field()
 
-	def get_event(self, event):
-		# bullets on full keypress
-		if event.type == pg.KEYDOWN:
-			if event.key == pg.K_SPACE:
-				self.ship_shoot_bullet()
-
 	def update(self, screen, keys, current_time):
-		if keys[pg.K_ESCAPE]:
-			self.quit = True
-
 		# update time
 		self.current_time = current_time
+		# clear whole screen
+		screen.fill((0,0,0))
 
-		# clear draw
-		screen.fill( (0,0,0) )
-
-		# update (and draw) things
-		self.update_explosions(screen)
 		self.update_asteroids(screen)
-		self.update_player(screen, keys)
-		self.update_bullets(screen)
-
-		# do asteroids physics
 		self.asteroid_physics()
-
-	def player_overlaps_asteroid(self, an_asteroid):
-		# add the player's center to points to check
-		collision_points = (self.player_ship.vertices
-			+ [pg.Vector2(self.player_ship.pos_x, self.player_ship.pos_y)])
-		for px, py in collision_points:
-			if util.is_point_inside_circle(px, py, an_asteroid.pos_x, 
-			 		an_asteroid.pos_y, an_asteroid.death_radius):
-				return True
-		return False
 
 	def generate_asteroid_field(self):
 		# add some asteroids
-		for i in range(self.rng.randint(5, 6)):
-			# create asteroid, and add it if doesn't touch player
-			x = self.rng.randint(0, setup.SCREEN_RECT.width)
-			y = self.rng.randint(0, setup.SCREEN_RECT.height)
-			a = Asteroid(x, y, asteroid.BIG, self.rng)
-			if not self.player_overlaps_asteroid(a):
-				self.asteroids.append(a)
-
-	def update_player(self, screen, keys):
-		self.player_ship.update(screen, keys, self.current_time)
-		self.player_ship.pos_x = self.player_ship.pos_x % setup.SCREEN_RECT.width
-		self.player_ship.pos_y = self.player_ship.pos_y % setup.SCREEN_RECT.height
-
-	def ship_shoot_bullet(self):
-		if self.player_ship.alive:
-			setup.SFX['shoot'].play()
-			player_speed = util.distance(self.player_ship.vel_x, self.player_ship.vel_y, 0, 0) # get magnitude
-			player_nose_x = self.player_ship.vertices[0][0]
-			player_nose_y = self.player_ship.vertices[0][1]
-			b = Bullet(player_nose_x, player_nose_y, 
-				self.player_ship.angle, player_speed + c.BULLET_SPEED, self.current_time)
-			self.bullets.append(b)
-
-	# update bullets
-	def update_bullets(self, screen):
-		self.bullets = [b for b in self.bullets if b.alive]
-		for b in self.bullets:
-			b.update(screen, self.current_time)
-			b.pos_x = b.pos_x % setup.SCREEN_RECT.width
-			b.pos_y = b.pos_y % setup.SCREEN_RECT.height
+		for x in range(10):
+			for y in range(10):
+				# create asteroid, and add it if doesn't touch player
+				a = Asteroid(x * 50, y * 50, asteroid.BIG, self.rng)
+				if not self.player_overlaps_asteroid(a):
+					self.asteroids.append(a)
 
 	def asteroid_physics(self):
 		# asteroid collisions
@@ -161,50 +101,38 @@ class Game(_State):
 			a2.vel_y = ty * dp_tan2 + ny * m2
 
 	def update_asteroids(self, screen):
+		# update and show asteroids
 		hit_player = False
 		# add these after
 		new_asteroids = []
 		# remove dead asteroids
 		self.asteroids = [a for a in self.asteroids if a.alive]
 		for a in self.asteroids:
-			if a.alive:
-				# check bullet collisions
-				for b in self.bullets:
-					if util.is_point_inside_circle(b.pos_x, b.pos_y, a.pos_x, a.pos_y, a.bounding_radius):
-						b.alive = False
-						a.alive = False
-				# check player collisions -> game over
-				if self.player_ship.alive and self.player_overlaps_asteroid(a):
-					hit_player = True
+			# check bullet collisions
+			for b in self.bullets:
+				if util.is_point_inside_circle(b.pos_x, b.pos_y, a.pos_x, a.pos_y, a.bounding_radius):
+					b.alive = False
 					a.alive = False
-				a.update(screen)
-				# wrap positions around screen
-				a.pos_x = a.pos_x % setup.SCREEN_RECT.width
-				a.pos_y = a.pos_y % setup.SCREEN_RECT.height
-			
-			# separate from last if because it can change
-			if not a.alive:
-				# split the asteroids
-				new_asteroids += self.split_asteroid(a)
+					# split the asteroids
+					new_asteroids += self.split_asteroid(a)
+			# check player collisions -> game over
+			if self.player_overlaps_asteroid(a):
+				hit_player = True
+			a.update()
+			a.draw(screen)
+			# wrap positions around screen
+			a.pos_x = a.pos_x % setup.SCREEN_RECT.width
+			a.pos_y = a.pos_y % setup.SCREEN_RECT.height
+		# game over if hit player
+		if hit_player:
+			self.next = c.PLAY_GAME
+			self.done = True
 		# finally add the new ones (if any)
 		self.asteroids += new_asteroids
-		if hit_player:
-			self.kill_player()
-
-	def kill_player(self):
-		self.player_ship.alive = False
-		setup.SFX['death'].play()
-		self.add_explosion(self.player_ship.pos_x, self.player_ship.pos_y, 60, (255,0,0))
-		self.extra_lives -= 1
-		if self.extra_lives < 0:
-			# Game over
-			self.game_over()
 
 	def split_asteroid(self, an_asteroid):
 		# create new asteroids from bigger ones only
 		created = []
-		# sound
-		setup.SFX['explosion'].play()
 		if an_asteroid.size > asteroid.SMALL:
 			num_splits = 2
 			split_size = an_asteroid.size / num_splits
@@ -219,13 +147,5 @@ class Game(_State):
 				created.append(a)
 		else:
 			# explode if small
-			self.add_explosion(an_asteroid.pos_x, an_asteroid.pos_y, 20)
+			self.add_explosion(an_asteroid.pos_x, an_asteroid.pos_y, 100)
 		return created
-
-	def add_explosion(self, x, y, size, color = (255,255,255)):
-		exp = particles.Explosion(x, y, size, color, self.current_time, self.rng)
-		self.explosions.append(exp)
-
-	def update_explosions(self, screen):
-		for x in self.explosions:
-			x.update(screen, self.current_time)

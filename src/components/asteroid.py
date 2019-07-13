@@ -12,6 +12,7 @@ MEDIUM = 16
 SMALL = 8
 
 YELLOW = (255, 255, 0)
+BLACK = (0, 0, 0)
 
 class Asteroid(SpaceObject):
 
@@ -69,13 +70,8 @@ class Asteroid(SpaceObject):
 		pos_x, pos_y, angle = self.pos_x, self.pos_y, self.angle
 		self.vertices = [util.transform_point(x, y, pos_x, pos_y, angle, 1, 1) for (x, y) in self.model]
 	
-	def update(self):
-		self.update_pos()
-		self.update_model()
-	
-	def draw(self, screen):
-		util.draw_wrapped_lines(screen, YELLOW, True, self.vertices)
-		# for r in [self.max_radius, self.death_radius, self.min_radius, self.average_radius]:
-		# 	pg.draw.circle(screen, (0, 255, 0), (int(self.pos_x), int(self.pos_y)), int(r), 1)
-	
-
+	def update(self, screen):
+		if self.alive:
+			self.update_pos()
+			self.update_model()
+			util.draw_wrapped_lines(screen, YELLOW, True, self.vertices)
