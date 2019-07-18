@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# Sublime text workspace and project settings
+*.sublime-project
+*.sublime-workspace
+
 # Distribution / packaging
 .Python
 build/

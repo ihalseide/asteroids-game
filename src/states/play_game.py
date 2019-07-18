@@ -78,9 +78,15 @@ class Game(_State):
 				self.asteroids.append(a)
 
 	def update_player(self, screen, keys):
+		# update the player whether alive or not
 		self.player_ship.update(screen, keys, self.current_time)
-		self.player_ship.pos_x = self.player_ship.pos_x % setup.SCREEN_RECT.width
-		self.player_ship.pos_y = self.player_ship.pos_y % setup.SCREEN_RECT.height
+		# alive player gets wrapped around screen
+		if self.player_ship.alive:
+			self.player_ship.pos_x = self.player_ship.pos_x % setup.SCREEN_RECT.width
+			self.player_ship.pos_y = self.player_ship.pos_y % setup.SCREEN_RECT.height
+		else:
+			# dead player gets timed for when to do other stuff...
+			pass
 
 	def ship_shoot_bullet(self):
 		if self.player_ship.alive:
@@ -161,11 +167,14 @@ class Game(_State):
 			a2.vel_y = ty * dp_tan2 + ny * m2
 
 	def update_asteroids(self, screen):
+		# keep track if any asteroids hit the player
 		hit_player = False
 		# add these after
 		new_asteroids = []
 		# remove dead asteroids
 		self.asteroids = [a for a in self.asteroids if a.alive]
+
+		# now go through all of them again
 		for a in self.asteroids:
 			if a.alive:
 				# check bullet collisions
@@ -174,7 +183,7 @@ class Game(_State):
 						b.alive = False
 						a.alive = False
 				# check player collisions -> game over
-				if self.player_ship.alive and self.player_overlaps_asteroid(a):
+				if not hit_player and self.player_ship.alive and self.player_overlaps_asteroid(a):
 					hit_player = True
 					a.alive = False
 				a.update(screen)
@@ -182,14 +191,22 @@ class Game(_State):
 				a.pos_x = a.pos_x % setup.SCREEN_RECT.width
 				a.pos_y = a.pos_y % setup.SCREEN_RECT.height
 			
-			# separate from last if because it can change
+			# This IF is separate from previous IF because the alive state can change
+			# from within the previous IF
 			if not a.alive:
 				# split the asteroids
 				new_asteroids += self.split_asteroid(a)
-		# finally add the new ones (if any)
+
+		# finally add the new asteroids from splitting (if any)
 		self.asteroids += new_asteroids
+
+		# check if any hit the player
 		if hit_player:
 			self.kill_player()
+
+		# check if any more asteroids need to be created
+		if len(self.asteroids) <= c.MIN_ASTEROID_COUNT:
+			self.generate_asteroid_field()
 
 	def kill_player(self):
 		self.player_ship.alive = False

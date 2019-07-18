@@ -13,10 +13,14 @@ GAME_OVER = 'game over'
 PLAY_GAME = 'play game'
 TEST = 'test'
 
-# Gameplay
+# Gameplay #
+# Asteroids...
+MIN_ASTEROID_COUNT = 2
+# Bullets...
 BULLET_SPEED = 300
 BULLET_LIFETIME = 1500
 MIN_VEL_FACTOR = 10
+# Debris (explosions)...
 DEBRIS_SPEED = 0.095
 DEBRIS_RANDOMNESS = 3
 DEBRIS_LIFETIME = (1000, 1300) # milliseconds
