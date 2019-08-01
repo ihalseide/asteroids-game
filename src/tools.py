@@ -45,9 +45,13 @@ class Control(object):
 	def flip_state(self):
 		prev, self.state_name = self.state_name, self.state.next
 		persist = self.state.cleanup()
-		self.state = self.state_dict[self.state_name]
-		self.state.startup(self.current_time, persist)
-		self.state.prev = prev
+		try:
+			self.state = self.state_dict[self.state_name]
+			self.state.startup(self.current_time, persist)
+			self.state.prev = prev
+		except KeyError as e:
+			print("Accepting invalid key as a call to quit... \n {}".format(e))
+			self.done = True
 
 	def main(self):
 		"""Main loop for the entire program"""

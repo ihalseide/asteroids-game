@@ -25,7 +25,7 @@ class Game(_State):
 
 		self.rng = random.Random(2019)
 		# middle of screen by using splat and generator expression
-		self.player_ship = Ship(*(x//2 for x in setup.SCREEN_RECT.size), self.rng)
+		self.spawn_player()
 		self.asteroids = []
 		self.bullets = []
 		self.explosions = []
@@ -77,6 +77,9 @@ class Game(_State):
 			if not self.player_overlaps_asteroid(a):
 				self.asteroids.append(a)
 
+	def spawn_player(self):
+		self.player_ship = Ship(*(x//2 for x in setup.SCREEN_RECT.size), self.rng)
+
 	def update_player(self, screen, keys):
 		# update the player whether alive or not
 		self.player_ship.update(screen, keys, self.current_time)
@@ -84,9 +87,9 @@ class Game(_State):
 		if self.player_ship.alive:
 			self.player_ship.pos_x = self.player_ship.pos_x % setup.SCREEN_RECT.width
 			self.player_ship.pos_y = self.player_ship.pos_y % setup.SCREEN_RECT.height
-		else:
+		elif self.player_ship.ready:
 			# dead player gets timed for when to do other stuff...
-			pass
+			self.spawn_player()
 
 	def ship_shoot_bullet(self):
 		if self.player_ship.alive:
@@ -208,6 +211,10 @@ class Game(_State):
 		if len(self.asteroids) <= c.MIN_ASTEROID_COUNT:
 			self.generate_asteroid_field()
 
+	def game_over(self):
+		print("TODO: game over")
+		self.done = True
+		
 	def kill_player(self):
 		self.player_ship.alive = False
 		setup.SFX['death'].play()

@@ -36,6 +36,9 @@ class Ship(SpaceObject):
 		# create current model based on transform
 		self.vertices = [None for x in self.model]
 		self.update_model()
+
+		# Ready to be alive (not in dying animation)
+		self.ready = True
 	
 	def update_model(self):
 		# update model
@@ -69,6 +72,7 @@ class Ship(SpaceObject):
 		else:
 			if not self.has_broken:
 				self.has_broken = True
+				self.ready = False
 				# create lines to fly around
 				self.update_pos()
 				self.update_model()
@@ -84,8 +88,12 @@ class Ship(SpaceObject):
 					l = Debris(a, b, vx, vy, current_time, self.rng)
 					self.lines.append(l)
 
+			any_lines_alive = False
 			for l in self.lines:
 				l.update(screen, current_time)
+				any_lines_alive = any_lines_alive or l.alive
+			if not any_lines_alive:
+				self.ready = True
 
 class Debris:
 	def __init__(self, point_a, point_b, vel_x, vel_y, start_time, rng):
