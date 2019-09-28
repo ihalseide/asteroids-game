@@ -5,12 +5,12 @@ import pygame as pg
 from . import constants as c
 
 def load_all_sfx(directory, accept=('.wav','.mpe','.ogg','.mdi')):
-    effects = {}
-    for fx in os.listdir(directory):
-        name, ext = os.path.splitext(fx)
-        if ext.lower() in accept:
-            effects[name] = pg.mixer.Sound(os.path.join(directory, fx))
-    return effects
+	effects = {}
+	for fx in os.listdir(directory):
+		name, ext = os.path.splitext(fx)
+		if ext.lower() in accept:
+			effects[name] = pg.mixer.Sound(os.path.join(directory, fx))
+	return effects
 
 class Control(object):
 	def __init__(self, caption):
