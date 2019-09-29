@@ -10,6 +10,9 @@ class SpaceObject:
 		self.vel_x, self.vel_y, self.vel_angle = 0, 0, 0
 		self.alive = True
 
+	def kill(self):
+		self.alive = False
+		
 	def update_pos(self):
 		self.pos_x += self.vel_x / c.TICKS_PER_SECOND
 		self.pos_y += self.vel_y / c.TICKS_PER_SECOND

@@ -13,6 +13,7 @@ from ..components import particles
 from ..components.bullet import Bullet
 from ..components.ship import Ship
 from ..components.asteroid import Asteroid
+from .. import line_font_draw as text_draw
 
 BLACK = (0, 0, 0)
 
@@ -21,14 +22,19 @@ class Game(_State):
 		_State.__init__(self)
 
 	def startup(self, current_time, persist):
+		self.score = 0
 		self.extra_lives = 3 # extra lives for the player
 		self.game_is_over = False
+		self.game_over_time = None
 		self.rng = random.Random() # rng for asteroids and explosions
 		self.spawn_player()
-		self.asteroids = []
+		if persist.get(c.ASTEROID_FIELD):
+			self.asteroids = persist[c.ASTEROID_FIELD]
+		else:
+			self.asteroids = []
+			asteroid.generate_asteroid_field(self.rng) # add asteroids now, the player must be placed before this runs
 		self.bullets = []
 		self.explosions = []
-		self.generate_asteroid_field() # add asteroids now, the player must be placed before this runs
 
 	def get_event(self, event):
 		##bullets on full keypress
@@ -50,8 +56,20 @@ class Game(_State):
 			self.update_player(screen, keys)
 		self.update_bullets(screen)
 		self.asteroid_physics() # do asteroids physics
+		text_draw.draw_string(screen, c.COLORS['white'], "SCORE "+str(self.score), (20, 20), (20, 20), spacing=.5)
 		if self.game_is_over:
-			pg.draw.rect(screen, (255, 0, 0), (100, 100, 50, 50), 1)
+			text_draw.draw_string(screen, c.COLORS['red'], "GAME OVER", (200, setup.SCREEN_RECT.height//2), (40, 40), spacing=.6)
+			## wait a while and then switch back to menu
+			if self.current_time - self.game_over_time > c.GAME_OVER_TIME:
+				if self.new_highscore():
+					self.next = c.SCORE
+				else:
+					self.next = c.MAIN_MENU
+				self.done = True
+
+	def new_highscore(self):
+		## # TODO: return if the score is good or not
+		return False # for now
 
 	def player_overlaps_asteroid(self, an_asteroid):
 		##add the player's center to points to check
@@ -62,16 +80,6 @@ class Game(_State):
 			 		an_asteroid.pos_y, an_asteroid.death_radius):
 				return True
 		return False
-
-	def generate_asteroid_field(self):
-		##add some asteroids
-		for i in range(self.rng.randint(5, 6)):
-			##create asteroid, and add it if doesn't touch player
-			x = self.rng.randint(0, setup.SCREEN_RECT.width)
-			y = self.rng.randint(0, setup.SCREEN_RECT.height)
-			a = Asteroid(x, y, asteroid.BIG, self.rng)
-			if not self.player_overlaps_asteroid(a):
-				self.asteroids.append(a)
 
 	def spawn_player(self):
 		self.player_ship = Ship(*(x//2 for x in setup.SCREEN_RECT.size), self.rng)
@@ -192,14 +200,15 @@ class Game(_State):
 		if hit_player:
 			self.kill_player()
 			##check if any more asteroids need to be created
-		if len(self.asteroids) <= c.MIN_ASTEROID_COUNT:
-			self.generate_asteroid_field()
+		if len(self.asteroids) < c.MIN_ASTEROID_COUNT:
+			self.asteroids = asteroid.generate_asteroid_field(self.rng)
 
 	def game_over(self):
 		self.game_is_over = True
+		self.game_over_time = self.current_time
 
 	def kill_player(self):
-		self.player_ship.alive = False
+		self.player_ship.kill(self.current_time)
 		setup.SFX['death'].play()
 		self.add_explosion(self.player_ship.pos_x, self.player_ship.pos_y, 60, (255,0,0))
 		self.extra_lives -= 1
@@ -212,7 +221,7 @@ class Game(_State):
 		created = []
 		##sound
 		setup.SFX['explosion'].play()
-		if an_asteroid.size > asteroid.SMALL:
+		if an_asteroid.size > c.SMALL:
 			num_splits = 2
 			split_size = an_asteroid.size / num_splits
 			##distance to 0 can get the magnitude

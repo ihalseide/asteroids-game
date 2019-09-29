@@ -7,7 +7,6 @@ from .space_object import SpaceObject
 BLACK = 0, 0, 0
 
 class Explosion(SpaceObject):
-
 	@classmethod
 	def mod_color(cls, rbg_component_int, deviation, rng):
 		i = rbg_component_int + rng.randint(-deviation, deviation)

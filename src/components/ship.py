@@ -16,31 +16,30 @@ class Ship(SpaceObject):
 		self.turn_speed = 5.5
 		self.thrust_acceleration = 310
 		self.turn_resistance = .45
-		self.turning = 0 # -1, 0, or 1
-
+		self.turning = 0 # should be -1, 0, or 1
 		self.is_thrusting = False
 		self.is_firing = False
 		self.vertices = []
-		self.model = [(1.0, 0), (-.5, .5), (-.2, 0), (-.5, -.5)]
+		self.model = [(1.0, 0), (-.5, .5), (-.2, 0), (-.5, -.5)] # normal model for ship
 		self.angle = 0
 		self.is_firing = False
-
-		## create lines that represent the ship when destroyed
-		self.lines = []
-		self.has_broken = False
-		self.rng = rng
-
 		## create current model based on transform
-		self.vertices = [None for x in self.model]
+		self.vertices = None # to be created in next line
 		self.update_model()
-
-		## Ready to be alive (not in dying animation)
+		## Ready state, and death
 		self.ready = True
+		self.death_time = None
+		self.respawn_time = 1000 # milliseconds
 
 	def update_model(self):
 		# update model
 		pos_x, pos_y, angle, scale = self.pos_x, self.pos_y, self.angle, self.scale
 		self.vertices = [util.transform_point(x, y, pos_x, pos_y, angle, scale, scale) for (x, y) in self.model]
+
+	def kill(self, current_time):
+		self.alive = False
+		self.ready = False
+		self.death_time = current_time
 
 	def update(self, screen, keys, current_time):
 		if self.alive:
@@ -62,48 +61,5 @@ class Ship(SpaceObject):
 			self.update_model()
 			util.draw_wrapped_lines(screen, self.color, True, self.vertices) # finish draw
 		else:
-			if not self.has_broken: self.break_apart(current_time)
-			## update lines
-			any_lines_alive = False
-			for l in self.lines:
-				l.update(screen, current_time)
-				if l.alive:
-					any_lines_alive = True
-					break
-			if not any_lines_alive: self.ready = True # ready to respawn
-
-	def break_apart(self, current_time):
-		self.has_broken = True
-		self.ready = False
-		## create lines to fly around
-		self.update_pos()
-		self.update_model()
-		self.lines.clear()
-		# iterate connected vertices in pairs
-		for a, b in zip(self.vertices, self.vertices[1:]+[self.vertices[0]]):
-			## velocity based on relative distance to ship's center
-			average_pos = util.avg_point(*a, *b)
-			vx = ((average_pos[0] - self.pos_x + self.rng.randint(-c.DEBRIS_RANDOMNESS, c.DEBRIS_RANDOMNESS)) * c.DEBRIS_SPEED / c.TICKS_PER_SECOND)
-			vy = ((average_pos[1] - self.pos_y + self.rng.randint(-c.DEBRIS_RANDOMNESS, c.DEBRIS_RANDOMNESS)) * c.DEBRIS_SPEED / c.TICKS_PER_SECOND)
-			l = Debris(a, b, vx, vy, current_time, self.rng)
-			self.lines.append(l)
-
-class Debris:
-	def __init__(self, point_a, point_b, vel_x, vel_y, start_time, rng):
-		self.point_a = list(point_a)
-		self.point_b = list(point_b)
-		self.vel_x = vel_x
-		self.vel_y = vel_y
-		self.start_time = start_time
-		self.alive = True
-		self.lifetime = rng.randint(*c.DEBRIS_LIFETIME)
-
-	def update(self, screen, current_time):
-		dt = current_time - self.start_time
-		self.alive = dt < self.lifetime
-		if self.alive:
-			x1 = self.point_a[0] + self.vel_x * dt
-			y1 = self.point_a[1] + self.vel_y * dt
-			x2 = self.point_b[0] + self.vel_x * dt
-			y2 = self.point_b[1] + self.vel_y * dt
-			util.draw_wrapped_line(screen, BLUE, (x1, y1), (x2, y2))
+			if current_time - self.death_time >= self.respawn_time:
+				self.ready = True # ready to respawn

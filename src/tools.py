@@ -12,6 +12,33 @@ def load_all_sfx(directory, accept=('.wav','.mpe','.ogg','.mdi')):
 			effects[name] = pg.mixer.Sound(os.path.join(directory, fx))
 	return effects
 
+def load_chars(directory):
+	with open(os.path.join(directory, "characters.txt")) as f:
+		lines = f.readlines()
+	chars = [read_char_path(l) for l in lines]
+	chars = {t[0]: t[1] for t in chars}
+	return chars
+
+def read_char_path(string):
+	parts = string.strip().split(" ")
+	name = parts[0]
+	if not name:
+		name = ' ' # space
+	if len(parts) > 1:
+		nums = [float(p) for p in parts[1:]]
+		points = []
+		current_point = []
+		for i, num in enumerate(nums):
+			if i % 2 == 0:
+				current_point = [num]
+			else:
+				current_point.append(num)
+				points.append(tuple(current_point))
+				current_point = []
+	else:
+		points = []
+	return name, points
+
 class Control(object):
 	def __init__(self, caption):
 		self.caption = caption
@@ -55,6 +82,7 @@ class Control(object):
 
 	def main(self):
 		"""Main loop for the entire program"""
+		self.state.startup(self.current_time, {})
 		while not self.done:
 			self.event_loop()
 			self.update()
@@ -81,7 +109,8 @@ class _State:
 		self.prev = None # Previous state
 		self.persist = {} # Persistant data
 
-	def update(self, screen, keys, current_time): pass
+	def update(self, screen, keys, current_time):
+		self.current_time = current_time
 
 	def get_event(self, event): pass
 
