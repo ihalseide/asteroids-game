@@ -24,19 +24,19 @@ class Menu(_State):
 	def update(self, screen, keys, current_time):
 		_State.update(self, screen, keys, current_time)
 
-		screen.fill(c.COLORS['black'])
+		screen.fill(pg.color.THECOLORS['black'])
 
 		self.update_asteroids(screen)
 		self.asteroid_physics()
 
-		text_draw.draw_string(screen, c.COLORS["white"], "ASTEROIDS", (180, setup.SCREEN_RECT.height//8), (50, 50), spacing=.6, thickness=2)
+		text_draw.draw_string(screen, pg.color.THECOLORS["white"], "ASTEROIDS", (180, setup.SCREEN_RECT.height//8), (50, 50), spacing=.6, thickness=2)
 
 		if self.current_time - self.last_flash_time >= c.FLASH_TIME:
 			self.show_play_flash = not self.show_play_flash
 			self.last_flash_time = self.current_time
 
 		if self.show_play_flash:
-			text_draw.draw_string(screen, c.COLORS["white"], "PRESS START", (210, 7*setup.SCREEN_RECT.height//8), (30, 30), spacing=.6)
+			text_draw.draw_string(screen, pg.color.THECOLORS["white"], "PRESS START", (210, 7*setup.SCREEN_RECT.height//8), (30, 30), spacing=.6)
 
 	def get_event(self, event):
 		if event.type == pg.KEYDOWN:

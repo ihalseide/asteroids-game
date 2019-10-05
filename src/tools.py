@@ -13,11 +13,23 @@ def load_all_sfx(directory, accept=('.wav','.mpe','.ogg','.mdi')):
 	return effects
 
 def load_chars(directory):
-	with open(os.path.join(directory, "characters.txt")) as f:
+	with open(os.path.join(directory, "characters.txt"), "r") as f:
 		lines = f.readlines()
 	chars = [read_char_path(l) for l in lines]
 	chars = {t[0]: t[1] for t in chars}
 	return chars
+
+def load_scores(directory):
+	path = os.path.join(directory, "scores.txt")
+	try:
+		open(path, "x")
+	except FileExistsError:
+		 pass
+	with open(path, "r") as f:
+		lines = f.readlines()
+	scores = [read_score_line(l) for l in lines]
+	scores = {s[0]: s[1] for t in scores}
+	return scores
 
 def read_char_path(string):
 	parts = string.strip().split(" ")
@@ -38,6 +50,11 @@ def read_char_path(string):
 	else:
 		points = []
 	return name, points
+
+def read_score_line(string):
+	name, score = string.upper().split(' ')
+	score = int(score)
+	return (name, score)
 
 class Control(object):
 	def __init__(self, caption):

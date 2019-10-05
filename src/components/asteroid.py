@@ -79,4 +79,4 @@ class Asteroid(SpaceObject):
 		if self.alive:
 			self.update_pos()
 			self.update_model()
-			util.draw_wrapped_lines(screen, c.COLORS['yellow'], True, self.vertices)
+			util.draw_wrapped_lines(screen, pg.color.THECOLORS['yellow'], True, self.vertices)

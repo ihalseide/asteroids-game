@@ -17,3 +17,5 @@ SCREEN_RECT = SCREEN.get_rect()
 
 SFX = tools.load_all_sfx(os.path.join("res", "sound"))
 FNT = tools.load_chars("res")
+SCORES = tools.load_scores("res")
+print(SCORES)

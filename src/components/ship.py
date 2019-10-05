@@ -10,7 +10,7 @@ from .. import util
 class Ship(SpaceObject):
 	def __init__(self, x, y, rng):
 		SpaceObject.__init__(self, x, y)
-		self.color = c.COLORS['blue']
+		self.color = pg.color.THECOLORS['blue']
 		self.scale = 18 # model scale
 		## turning values
 		self.turn_speed = 5.5
