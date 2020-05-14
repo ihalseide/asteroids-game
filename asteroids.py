@@ -1,4 +1,4 @@
-#NO!/usr/bin/env python3
+#!/usr/bin/env python3
 
 '''
 Asteroids clone in Python3 with pygame
