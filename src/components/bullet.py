@@ -1,12 +1,8 @@
 
 import math
-
 from .. import util
 from .. import constants as c
 from .space_object import SpaceObject
-
-RED = (255, 0, 0)
-BLACK = (0, 0, 0)
 
 class Bullet(SpaceObject):
 
@@ -26,6 +22,7 @@ class Bullet(SpaceObject):
 			self.update_pos()	
 			# draw a red line
 			pos = int(self.pos_x), int(self.pos_y)
-			trail = (int(self.pos_x + self.vel_x/c.TICKS_PER_SECOND),
-			 int(self.pos_y + self.vel_y/c.TICKS_PER_SECOND))
-			util.draw_wrapped_line(screen, RED, pos, trail, 2)
+			nx = int(self.pos_x + self.vel_x/c.TICKS_PER_SECOND)
+			ny = int(self.pos_y + self.vel_y/c.TICKS_PER_SECOND)
+			trail = (nx, ny)
+			util.draw_wrapped_line(screen, (255,255,255), pos, trail, 2)

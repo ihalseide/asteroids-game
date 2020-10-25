@@ -1,9 +1,9 @@
+# Code for an Asteroid Object in the game...
 
 import math
 
 import pygame as pg
 from pygame import Vector2
-
 from .. import setup
 from .. import util
 from .. import constants as c
@@ -12,7 +12,7 @@ from .space_object import SpaceObject
 def generate_asteroid_field(rng):
 	asteroids = []
 	for i in range(rng.randint(8, 10)):
-		##create asteroid, and add it if doesn't touch player
+		# Create asteroid, and add it if doesn't touch player
 		x = rng.randint(0, setup.SCREEN_RECT.width)
 		y = rng.randint(0, setup.SCREEN_RECT.height)
 		size = rng.choice([c.BIG, c.MEDIUM, c.SMALL])
@@ -79,4 +79,4 @@ class Asteroid(SpaceObject):
 		if self.alive:
 			self.update_pos()
 			self.update_model()
-			util.draw_wrapped_lines(screen, pg.color.THECOLORS['yellow'], True, self.vertices)
+			util.draw_wrapped_lines(screen, (255,255,255), True, self.vertices)

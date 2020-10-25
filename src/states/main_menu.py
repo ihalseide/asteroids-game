@@ -7,22 +7,22 @@ from .. import constants as c
 from ..components.asteroid import Asteroid
 from ..components import asteroid
 from .. import setup
-from ..tools import _State
+from ..tools import State
 from .. import line_font_draw as text_draw
 
-class Menu(_State):
+class Menu(State):
 	def __init__(self):
-		_State.__init__(self)
+		State.__init__(self)
 
 	def startup(self, current_time, persistant):
-		_State.startup(self, current_time, persistant)
+		State.startup(self, current_time, persistant)
 		self.show_play_flash = True
 		self.last_flash_time = self.current_time
 		self.rng = random.Random()
 		self.asteroids = asteroid.generate_asteroid_field(self.rng)
 
 	def update(self, screen, keys, current_time):
-		_State.update(self, screen, keys, current_time)
+		State.update(self, screen, keys, current_time)
 
 		screen.fill(pg.color.THECOLORS['black'])
 

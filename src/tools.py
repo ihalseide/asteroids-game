@@ -116,7 +116,7 @@ class Control(object):
 				self.keys = pg.key.get_pressed()
 			self.state.get_event(event)
 
-class _State:
+class State:
 	def __init__(self):
 		self.start_time = 0.0
 		self.current_time = 0.0

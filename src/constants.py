@@ -1,30 +1,37 @@
+# This is the file for constants in the game
 
-## window setup
-ORIGINAL_CAPTION = "* Asteroids *"
-SCREEN_SIZE = 600, 600 # pixels
+# Window setup...
 
-## Tick settings
+ORIGINAL_CAPTION = "Asteroids"
+
+# Screen units in Pixels
+SCREEN_SIZE = 600, 600
+
+# Tick settings
 TICKS_PER_SECOND = 60
 MAX_TICKS_PER_FRAME = 10
 
-## Game states
+# Game states enum
 MAIN_MENU = 'main menu'
 GAME_OVER = 'game over'
 PLAY_GAME = 'play game'
 NEW_SCORE = 'new high score'
 
-## Menu
-FLASH_TIME = 820 # milliseconds wait
+# Menu
+# Times in milliseconds
+FLASH_TIME = 820
 ASTEROID_FIELD = 'asteroid field'
 
-## Play
-GAME_OVER_TIME = 5000 # milliseconds
+# Play
+# Times in milliseconds
+GAME_OVER_TIME = 5000
 
-## Ship
-PLAYER_RESPAWN_TIME = 1500 # milliseconds
+# Ship
+# Times in milliseconds
+PLAYER_RESPAWN_TIME = 1500
 
-## Asteroids
-MIN_ASTEROID_COUNT = 2 # asteroids
+# Asteroid objects
+MIN_ASTEROID_COUNT = 2
 BIG = 32
 MEDIUM = 16
 SMALL = 8
@@ -34,12 +41,14 @@ ASTEROID_POINTS = {
 	SMALL: 5000
 }
 
-## Bullets
+# Bullets
 BULLET_SPEED = 300 # px/sec
-BULLET_LIFETIME = 1500 # milliseconds
+# Times in milliseconds
+BULLET_LIFETIME = 1500
 MIN_VEL_FACTOR = 10
 
-## Debris (explosions)
+# Debris (explosions)
 DEBRIS_SPEED = 0.095 # px/millisecond
 DEBRIS_RANDOMNESS = 3
-DEBRIS_LIFETIME = (1000, 1300) # milliseconds
+# Times in milliseconds
+DEBRIS_LIFETIME = (1000, 1300)

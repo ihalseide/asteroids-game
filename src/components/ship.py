@@ -10,7 +10,6 @@ from .. import util
 class Ship(SpaceObject):
 	def __init__(self, x, y, rng):
 		SpaceObject.__init__(self, x, y)
-		self.color = pg.color.THECOLORS['blue']
 		self.scale = 18 # model scale
 		## turning values
 		self.turn_speed = 5.5
@@ -59,7 +58,7 @@ class Ship(SpaceObject):
 			## add velocities
 			self.update_pos()
 			self.update_model()
-			util.draw_wrapped_lines(screen, self.color, True, self.vertices) # finish draw
+			util.draw_wrapped_lines(screen, (255,255,255), True, self.vertices) # finish draw
 		else:
 			if current_time - self.death_time >= self.respawn_time:
 				self.ready = True # ready to respawn
