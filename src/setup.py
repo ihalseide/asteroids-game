@@ -15,6 +15,6 @@ pg.display.set_caption(c.ORIGINAL_CAPTION)
 SCREEN = pg.display.set_mode(c.SCREEN_SIZE)
 SCREEN_RECT = SCREEN.get_rect()
 
-SFX = tools.load_all_sfx(os.path.join("res", "sound"))
+SFX = tools.load_all_sfx("res")
 FNT = tools.load_chars("res")
 SCORES = tools.load_scores("res")
