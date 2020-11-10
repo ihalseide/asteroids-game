@@ -3,7 +3,6 @@ import pygame as pg
 from . import setup
 from . import util as u
 
-
 def draw_string(surface, color, string, position, scale, rotation=0,
                 thickness=1, spacing=1, wrapped=False):
     x, y = position
@@ -16,7 +15,6 @@ def draw_string(surface, color, string, position, scale, rotation=0,
                   wrapped)
         x += dx
         y += dy
-
 
 def draw_char(surface, color, character, position, scale, rotation=0,
               thickness=1, wrapped=False):
